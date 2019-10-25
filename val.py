@@ -19,6 +19,7 @@ def run_coco_eval(gt_file_path, dt_file_path):
     print('Running test for {} results.'.format(annotation_type))
 
     coco_gt = COCO(gt_file_path)
+    print(dt_file_path)
     coco_dt = coco_gt.loadRes(dt_file_path)
 
     result = COCOeval(coco_gt, coco_dt, annotation_type)

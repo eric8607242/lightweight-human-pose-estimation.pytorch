@@ -124,8 +124,10 @@ def run_demo(net, image_provider, height_size, cpu, track_ids):
                             cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255))
         cv2.imshow('Lightweight Human Pose Estimation Python Demo', img)
         key = cv2.waitKey(33)
-        if key == 27:  # esc
-            return
+        while 1:
+            continue
+        #if key == 27:  # esc
+        #    return
 
 
 if __name__ == '__main__':
