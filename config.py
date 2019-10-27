@@ -20,8 +20,8 @@ CONFIG = {
     },
     "training_setting" : {
         "epochs" : 1000,
-        "t_lr" : 5e-5,
-        "d_lr" : 2e-4,
+        "t_lr" : 2e-4,
+        "d_lr" : 1e-4,
         "save_target_model" : "./models/target_model.pth",
         "save_discriminator" : "./models/discriminator_model.pth"
     }

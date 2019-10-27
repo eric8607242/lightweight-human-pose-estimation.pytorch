@@ -1,10 +1,12 @@
 import sys
 import cv2
 import torch
+from torch.autograd import Variable
 
 from val import evaluate
 
 from config import CONFIG
+Tensor = torch.cuda.FloatTensor
 
 class Trainer:
     def __init__(self, source_net, target_net, discriminator, 
@@ -49,24 +51,21 @@ class Trainer:
                 target_output = self.target_net(target_data)
                 with torch.no_grad():
                     source_output = self.source_net(source_data)
-                concate_output = torch.cat((target_output, source_output), 0)
-                concate_output = concate_output.to(self.device)
 
-                predicted_output = self.discriminator(concate_output)
+                source_predict = self.discriminator(source_output)
+                target_predict = self.discriminator(target_output)
 
-                source_label = torch.ones(source_output.size(0))
-                target_label = torch.zeros(target_output.size(0))
-                concate_label = torch.cat((source_label, target_label), 0).to(self.device)
-                concate_label = concate_label.long()
+                source_label = Variable(Tensor(source_data.shape[0], 1).fill_(1.0), requires_grad=False).to(self.device)
+                target_label = Variable(Tensor(source_data.shape[0], 1).fill_(0.0), requires_grad=False).to(self.device)
 
-                discriminator_loss = self.criterion(predicted_output, concate_label)
+
+                real_loss = self.criterion(source_predict, source_label)
+                fake_loss = self.criterion(target_predict, target_label)
+
+                discriminator_loss = (real_loss + fake_loss) / 2
                 discriminator_loss.backward()
 
                 self.optimizer_d.step()
-
-                predict_class = predicted_output.argmax(1).long()
-                acc = predict_class.eq(concate_label)
-                acc = acc.float().mean()
 
 
                 self.criterion.zero_grad()
@@ -77,9 +76,9 @@ class Trainer:
                 target_output = self.target_net(target_data)
                 predicted_output = self.discriminator(target_output)
                 
-                source_label = torch.ones(source_output.size(0)).to(self.device)
+                source_label = Variable(Tensor(source_data.shape[0], 1).fill_(1.0), requires_grad=False).to(self.device)
 
-                generator_loss = self.criterion(predicted_output, source_label.long())
+                generator_loss = self.criterion(predicted_output, source_label)
                 generator_loss.backward()
 
                 self.optimizer_tg.step()
@@ -88,13 +87,13 @@ class Trainer:
                     torch.save({"state_dict":self.target_net.state_dict()}, CONFIG["training_setting"]["save_target_model"])
                     torch.save(self.discriminator, CONFIG["training_setting"]["save_discriminator"])
                     print("Epoch [{}/{}] Step {}:"
-                          " d_loss={:.5f} g_loss={:.5f} acc={:.5f}"
+                          " d_loss={:.5f} g_loss={:.5f}"
                           .format(epoch+1, 
                                   CONFIG["training_setting"]["epochs"], 
                                   step+1, 
                                   discriminator_loss.item(),
                                   generator_loss.item(),
-                                  acc.item()))
+                                  ))
             self.target_net.zero_grad()
             #self.target_net.set_mode(False)
             #self._evaluate(self.target_net)

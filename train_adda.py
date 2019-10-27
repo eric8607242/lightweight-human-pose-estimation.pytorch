@@ -28,7 +28,7 @@ def main():
     load_state(target_net, model_dict)
 
     discriminator = Discriminator()
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCELoss()
 
     source_net = source_net.cuda(CONFIG["GPU"]["source_net"])
     target_net = target_net.cuda(CONFIG["GPU"]["target_net"])
