@@ -2,8 +2,11 @@ import sys
 import cv2
 import torch
 from torch.autograd import Variable
+from torchvision import transforms
 
 from val import evaluate
+from datasets.coco import CocoTrainDataset
+from datasets.transformations import ConvertKeypoints
 
 from config import CONFIG
 Tensor = torch.cuda.FloatTensor
@@ -26,6 +29,12 @@ class Trainer:
         self.val_labels = CONFIG["dataset"]["val_labels"]
         self.val_images_folder = CONFIG["dataset"]["val_images_folder"]
         self.val_output_name = CONFIG["dataset"]["val_output_name"]
+
+        val_datasets = CocoTrainDataset(self.val_labels, self.val_images_folder, 8, 7, 1, 
+                                               transform=transforms.Compose([
+                                                   ConvertKeypoints()
+                                                   ]))
+        self.val_dataloader = DataLoader(val_datasets, batch_size=CONFIG["training"]["batch_size"], shuffle=True, num_workers=0)
 
         self.device = device
 
@@ -106,6 +115,32 @@ class Trainer:
         model.eval()
         model.set_mode(False)
 
-        evaluate(self.val_labels, self.val_output_name, self.val_images_folder, model)
+        total_losses = [0, 0] * (2)
+
+        for batch_data in self.val_dataloader:
+            images = batch_data["image"]
+            keypoint_masks = batch_data["keypoint_mask"]
+            paf_masks = batch_data["paf_masks"]
+            keypoint_maps = batch_data["keypoint_maps"]
+            paf_maps = batch_data["paf_maps"]
+
+            stages_output = model(images)
+
+            losses = []
+            for loss_idx in range(len(total_losses) // 2):
+                losses.append(l2_loss(stages_output[loss_idx*2], keypoint_maps, keypoint_masks, images.shape[0]))
+                losses.append(l2_loss(stages_output[loss_idx*2 + 1], paf_maps, paf_masks, images.shape[0]))
+
+                total_losses[loss_idx*2] += losses[-2].item()
+                total_losses[loss_idx*2+1] += losses[-1].item()
+
+            loss = losses[0]
+            for loss_idx in range(1, len(losses)):
+                loss += losses[loss_idx]
+
+        print("Valdating Step"
+                " Loss = {}".format(loss))
+
+        #evaluate(self.val_labels, self.val_output_name, self.val_images_folder, model)
         
 
