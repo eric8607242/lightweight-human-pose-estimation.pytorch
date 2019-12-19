@@ -11,10 +11,10 @@ CONFIG = {
     },
     "dataset" : {
         "input_size" : 256,
-        "batch_size" : 64,
+        "batch_size" : 32,
         "source_img_folder" : "./data/rgb/",
         "target_img_folder" : "./data/ther/",
-        "val_labels" : "./data/annotation/training.json",
+        "val_labels" : "./data/annotation/prepared_train_annotation.pkl",
         "val_output_name" : "./d.json",
         "val_images_folder" : "./data/images/"
     },
@@ -25,7 +25,4 @@ CONFIG = {
         "save_target_model" : "./models/target_model.pth",
         "save_discriminator" : "./models/discriminator_model.pth"
     }
-
-
-
 }

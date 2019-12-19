@@ -1,5 +1,6 @@
 import argparse
 
+import os
 import cv2
 import numpy as np
 import torch
@@ -13,8 +14,9 @@ from val import normalize, pad_width
 
 class ImageReader(object):
     def __init__(self, file_names):
-        self.file_names = file_names
-        self.max_idx = len(file_names)
+        self.dir_names = file_names[0]
+        self.file_names = os.listdir(file_names[0])
+        self.max_idx = len(self.file_names)
 
     def __iter__(self):
         self.idx = 0
@@ -23,7 +25,8 @@ class ImageReader(object):
     def __next__(self):
         if self.idx == self.max_idx:
             raise StopIteration
-        img = cv2.imread(self.file_names[self.idx], cv2.IMREAD_COLOR)
+        file_name = os.path.join(self.dir_names, self.file_names[self.idx])
+        img = cv2.imread(file_name, cv2.IMREAD_COLOR)
         if img.size == 0:
             raise IOError('Image {} cannot be read'.format(self.file_names[self.idx]))
         self.idx = self.idx + 1
@@ -87,7 +90,7 @@ def run_demo(net, image_provider, height_size, cpu, track_ids):
     upsample_ratio = 4
     num_keypoints = Pose.num_kpts
     previous_poses = []
-    for img in image_provider:
+    for i, img in enumerate(image_provider):
         orig_img = img.copy()
         heatmaps, pafs, scale, pad = infer_fast(net, img, height_size, stride, upsample_ratio, cpu)
 
@@ -122,12 +125,10 @@ def run_demo(net, image_provider, height_size, cpu, track_ids):
                               (pose.bbox[0] + pose.bbox[2], pose.bbox[1] + pose.bbox[3]), (0, 255, 0))
                 cv2.putText(img, 'id: {}'.format(pose.id), (pose.bbox[0], pose.bbox[1] - 16),
                             cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255))
-        cv2.imshow('Lightweight Human Pose Estimation Python Demo', img)
-        key = cv2.waitKey(33)
-        while 1:
-            continue
-        #if key == 27:  # esc
-        #    return
+        if len(current_poses) > 0:
+            cv2.imwrite("output/"+str(i)+"success.png", img)
+        else:
+            cv2.imwrite("output/"+str(i)+".png", img)
 
 
 if __name__ == '__main__':

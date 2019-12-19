@@ -11,18 +11,15 @@ class ConvBNRelu(nn.Sequential):
                        **kwargs):
         super(ConvBNRelu, self).__init__()
         
-        operation = nn.Conv2d(input_depth,
+        operation = nn.utils.spectral_norm(nn.Conv2d(input_depth,
                            output_depth,
                            kernel_size=kernel,
                            stride=stride,
                            padding=pad,
-                           bias=False)
-        self.add_module("conv", operation)
-        
-        bn_operation = nn.BatchNorm2d(output_depth)
-        self.add_module("bn", bn_operation)
-
+                           bias=False))
+        self.add_module("convsn", operation)
         self.add_module("relu", nn.ReLU(inplace=True))
+
 
 class Flatten(nn.Module):
     def __init__(self):
@@ -36,25 +33,19 @@ class Flatten(nn.Module):
 class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
-        #self.conv1 = ConvBNRelu(512, 512, 3, 2, 3//2)
-        self.conv3 = ConvBNRelu(512, 720, 3, 2, 3//2)
-        self.conv4 = ConvBNRelu(720, 720, 3, 1, 3//2)
+        self.conv1 = ConvBNRelu(512, 512, 3, 1, 3//2)
+        self.conv2 = ConvBNRelu(512, 1280, 3, 2, 3//2)
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.flatten = Flatten()
-        self.fc = nn.Sequential(nn.Linear(720, 200),
-                                nn.BatchNorm1d(200),
-                                nn.ReLU(),
-                                nn.Linear(200, 1),
-                                nn.Sigmoid())
+        self.fc = nn.Sequential((nn.Linear(1280, 1)))
+
     def forward(self, x):
         out = x
-        #out = self.conv1(out)
-        #out = self.conv2(out)
-        out = self.conv3(out)
-        out = self.conv4(out)
-        #out = self.conv5(out)
+        out = self.conv1(out)
+        out = self.conv2(out)
         out = self.avgpool(out)
         out = self.flatten(out)
         out = self.fc(out)
+        out = torch.sigmoid(out)
         return out

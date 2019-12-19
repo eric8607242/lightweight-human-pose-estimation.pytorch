@@ -30,10 +30,13 @@ class ADDADataset(Dataset):
         self.source_img_folder = CONFIG["dataset"]["source_img_folder"]
         self.target_img_folder = CONFIG["dataset"]["target_img_folder"]
 
-        self.source_paths = np.array([self._image_processing(join(self.source_img_folder, f)) for f in listdir(self.source_img_folder) if isfile(join(self.source_img_folder, f))])
-        self.target_paths = np.array([self._image_processing(join(self.target_img_folder, f)) for f in listdir(self.target_img_folder) if isfile(join(self.target_img_folder, f))])
+        self.source_paths = [self._image_processing(join(self.source_img_folder, f)) for f in listdir(self.source_img_folder) if isfile(join(self.source_img_folder, f))]
+        self.target_paths = [self._image_processing(join(self.target_img_folder, f)) for f in listdir(self.target_img_folder) if isfile(join(self.target_img_folder, f))]
 
-        self.transform = transforms.Compose([ToTensor()])
+        self.transform = transforms.Compose([
+                        transforms.RandomCrop(224, padding=4),
+                        transforms.RandomHorizontalFlip(),
+                        transforms.ToTensor()])
 
     def _image_processing(self, path):
         img = PIL.Image.open(path)
@@ -41,7 +44,7 @@ class ADDADataset(Dataset):
         img = img.convert("RGB")
         img = img.resize((self.input_size, self.input_size), PIL.Image.ANTIALIAS)
 
-        return np.array(img)
+        return img
 
     def __len__(self):
         return len(self.target_paths)
@@ -50,11 +53,11 @@ class ADDADataset(Dataset):
     def __getitem__(self, idx):
         source_img = self.source_paths[idx]
         target_img = self.target_paths[idx]
+        
+        source_img = self.transform(source_img)
+        target_img = self.transform(target_img)
 
         data = {"source" : source_img, "target" : target_img}
-
-        if self.transform:
-            data = self.transform(data)
 
         return data
         
