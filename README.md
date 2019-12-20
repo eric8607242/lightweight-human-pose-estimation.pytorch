@@ -3,6 +3,7 @@
 ## Table of Contents
 
 * [Prerequisites](#prerequisites)
+* [Dataset](#Dataset)
 * [Training](#training)
 * [Validation](#validation)
 * [Pre-trained model](#pre-trained-model)
@@ -12,6 +13,11 @@
 ## Prerequisites
 
 2. Install requirements `pip install -r requirements.txt`
+
+## Dataset
+* [ADDA Dataset Link](https://drive.google.com/drive/folders/1-B5-NnjQl-iqGsb4UnmnY5vQ3oxqa89w?usp=sharing)
+    * RGB
+    * Thermal
 
 ## Training
 Train ADDA
